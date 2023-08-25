@@ -1,46 +1,54 @@
-#!/bin/sh
-# shellcheck disable=SC2039
-set -e
+#!/usr/bin/env sh
+set -ex
 
-LATEST="9477386"
 URL="https://dl.google.com/android/repository"
-# shellcheck disable=SC2027
-ARCHIVE="commandlinetools-linux-"$LATEST"_latest.zip"
+ARCHIVE="commandlinetools-linux-${COMMAND_LINE_TOOLS_VERSION}_latest.zip"
 FOLDER="cmdline-tools"
 
-# Install Dependencies
-DEBIAN_FRONTEND="noninteractive" sudo apt update && 
-sudo apt install --no-install-recommends -y openjdk-11-jdk-headless unzip wget &&
-apt clean
+# Install apt dependencies
+APT_PACKAGES=""
+if ! which wget 2>&1 >/dev/null ; then
+    APT_PACKAGES="${APT_PACKAGES} wget"
+fi
 
-# install -d -m 0755 -o "$_REMOTE_USER" -g "$_REMOTE_USER" "$ANDROID_HOME/cmdline-tools"
+if ! which unzip 2>&1 >/dev/null ; then
+    APT_PACKAGES="${APT_PACKAGES} unzip"
+fi
+
+if ! which javac 2>&1 >/dev/null ; then
+    APT_PACKAGES="${APT_PACKAGES} openjdk-17-jdk-headless"
+fi
+
+# shellcheck disable=SC2086
+apt-get update && apt-get install -y ${APT_PACKAGES} && apt-get clean
 
 # Create the folder for the Android SDK
-mkdir -p "$ANDROID_HOME/$FOLDER" 
-    chown -R "$_REMOTE_USER:$_REMOTE_USER" "$ANDROID_HOME"
+mkdir -p "$ANDROID_SDK_ROOT/$FOLDER" 
+chown -R "$_REMOTE_USER:$_REMOTE_USER" "$ANDROID_SDK_ROOT"
 
 # Swap to the user that will be running the Android SDK
 su - "$_REMOTE_USER"
 
 # Download and extract the latest Android SDK command line tools
-wget -q "$URL/$ARCHIVE" 
-    unzip -q "$ARCHIVE" 
-    rm "$ARCHIVE" 
-    mv "$FOLDER" "$ANDROID_HOME/$FOLDER/latest" 
-    rm -rf "$FOLDER"
+wget -q "${URL}/${ARCHIVE}"
+unzip "${ARCHIVE}"
+mv "${FOLDER}" "${ANDROID_SDK_ROOT}/${FOLDER}/latest"
+rm "${ARCHIVE}"
 
-PACKAGES=("platform-tools" "patcher;v4")
-if [[ $PLATFORMS != "none" ]]; then
-    PACKAGES+=("platforms;android-$PLATFORMS")
+SDK_PACKAGES="platform-tools patcher;v4"
+if ! [ "${PLATFORMS}" = "none" ]; then
+    SDK_PACKAGES="${SDK_PACKAGES} platforms;android-${PLATFORMS}"
 fi
 
-if [[ ${BUILD-TOOLS} != "none" ]]; then
-    PACKAGES+=("build-tools;${BUILD-TOOLS}")
+if ! [ "${BUILD_TOOLS}" = "none" ]; then
+    SDK_PACKAGES="${SDK_PACKAGES} build-tools;${BUILD_TOOLS}"
 fi
 
+if [ "${EMULATOR}" = 'true' ]; then
+    SDK_PACKAGES="${SDK_PACKAGES} emulator"
+fi
 
-sdkmanager --install "${PACKAGES[@]}"
-# sdkmanager --install "platforms;android-30"
-# sdkmanager --install "build-tools;30.0.2"
-# sdkmanager --install "extras;android;m2repository"
-# sdkmanager --install "extras;google;m2repository"
+yes | sdkmanager --licenses
+
+# shellcheck disable=SC2086
+sdkmanager --install ${SDK_PACKAGES}

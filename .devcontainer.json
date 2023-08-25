@@ -1,15 +1,6 @@
 {
     "image": "mcr.microsoft.com/devcontainers/javascript-node:0-18",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "mads-hartmann.bash-ide-vscode"
-            ]
-        }
-    },
-    "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    },
+    "customizations": {},
     "remoteUser": "node",
     "onCreateCommand": "npm install -g @devcontainers/cli", // install in cache layer
 	"updateContentCommand": "npm update -g @devcontainers/cli" // update if new

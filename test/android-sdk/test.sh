@@ -7,11 +7,11 @@
 #
 # Eg:
 # {
-#    "image": "<..some-base-image...>",
-#    "features": {
-#      "hello": {}
+#    'image': '<..some-base-image...>',
+#    'features': {
+#      'hello': {}
 #    },
-#    "remoteUser": "root"
+#    'remoteUser': 'root'
 # }
 #
 # Thus, the value of all options will fall back to the default value in 
@@ -38,7 +38,20 @@ source dev-container-features-test-lib
 
 # Feature-specific tests
 # The 'check' command comes from the dev-container-features-test-lib.
-check "Android accpet licenses" bash -c "yes | sdkmanager --licenses"
+check 'Java is installed' which javac
+check 'Android SDK root is set' echo "${ANDROID_SDK_ROOT}"
+check 'Android command line tools installed' which sdkmanager
+check 'Android accpet licenses' sdkmanager --licenses | grep  'All SDK package licenses accepted.'
+check 'Platform tools are installed' sdkmanager --list_installed | grep  'platform-tools'
+check 'Patcher installed' sdkmanager --list_installed | grep  "patcher;v${PATCHER_VERSION}"
+check 'Platform installed' sdkmanager --list_installed | grep  "platforms;android-${PLATFORMS}"
+
+if [ "${EMULATOR}" = 'true' ]; then
+    check 'Emulator installed' sdkmanager --list_installed | grep  'emulator'
+else
+    check 'Emulator not installed' sdkmanager --list_installed | grep  -v 'emulator'
+fi
+
 
 # Report results
 # If any of the checks above exited with a non-zero exit code, the test will fail.
